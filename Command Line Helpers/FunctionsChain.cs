@@ -7,8 +7,8 @@ namespace ZTn.Tools.CommandLine.Helpers
 {
     public class FunctionsChain : IFunction
     {
-        String _functionName = String.Empty;
-        List<IFunction> functions;
+        readonly string _functionName = string.Empty;
+        readonly List<IFunction> _functions;
 
         int _errorCode = 0;
         TimeSpan _time;
@@ -16,96 +16,104 @@ namespace ZTn.Tools.CommandLine.Helpers
         System.IO.Stream _stream = System.IO.Stream.Null;
 
         /// <inheritdoc/>
-        public System.IO.Stream stream
+        public System.IO.Stream Stream
         {
             get { return _stream; }
             set
             {
                 _stream = value;
-                foreach (IFunction pf in functions)
+                foreach (var pf in _functions)
                 {
-                    pf.stream = value;
+                    pf.Stream = value;
                 }
             }
         }
 
         /// <inheritdoc/>
-        public int errorCode
+        public int ErrorCode
         {
             get { return _errorCode; }
         }
 
         /// <inheritdoc/>
-        public TimeSpan time
+        public TimeSpan Time
         {
             get { return _time; }
         }
 
         /// <inheritdoc/>
-        public FunctionsChain(String functionName)
+        public FunctionsChain(string functionName)
         {
             _functionName = functionName;
-            functions = new List<IFunction>();
+            _functions = new List<IFunction>();
         }
 
         /// <inheritdoc/>
-        public FunctionsChain addFunction(IFunction pf)
+        public FunctionsChain AddFunction(IFunction pf)
         {
-            functions.Add(pf);
+            _functions.Add(pf);
             return this;
         }
 
         /// <inheritdoc/>
-        public IFunction execute()
+        public IFunction Execute()
         {
-            System.IO.StreamWriter sw = new System.IO.StreamWriter(stream);
-            sw.AutoFlush = true;
+            var sw = new System.IO.StreamWriter(Stream) { AutoFlush = true };
 
             _time = TimeSpan.Zero;
             sw.WriteLine("[Chain     ] " + _functionName + " starting");
 
-            foreach (IFunction pf in functions)
+            foreach (var pf in _functions)
             {
-                pf.execute();
-                _time += pf.time;
-                _errorCode = pf.errorCode;
+                pf.Execute();
+                _time += pf.Time;
+                _errorCode = pf.ErrorCode;
                 if (_errorCode != 0) break;
             }
-            sw.WriteLine("[Chain     ] " + _functionName + " ended with ErrorCode " + errorCode);
+            sw.WriteLine("[Chain     ] " + _functionName + " ended with ErrorCode " + ErrorCode);
 
             return this;
         }
 
         /// <inheritdoc/>
-        public IFunction setPathToExecutable(string path)
+        public IFunction SetPathToExecutable(string path)
         {
-            foreach (IFunction pf in functions)
+            foreach (var pf in _functions)
             {
-                pf.setPathToExecutable(path);
+                pf.SetPathToExecutable(path);
             }
             return this;
         }
 
         /// <inheritdoc/>
-        public IFunction setParameters(string parameters)
+        public IFunction SetParameters(string parameters)
         {
             throw new Exception("setParameters must not be called from a ExecutablesChain object");
         }
 
         /// <inheritdoc/>
-        public IFunction setAlias(string alias, string value)
+        public IFunction SetAlias(string alias, string value)
         {
-            foreach (IFunction pf in functions)
+            foreach (var pf in _functions)
             {
-                pf.setAlias(alias, value);
+                pf.SetAlias(alias, value);
             }
             return this;
         }
 
         /// <inheritdoc/>
-        public IFunction setStream(System.IO.Stream outputStream)
+        public IFunction SetStream(System.IO.Stream outputStream)
         {
-            stream = outputStream;
+            Stream = outputStream;
+            return this;
+        }
+
+        public IFunction SetWorkingDirectory(string workingDirectory)
+        {
+            foreach (var pf in _functions)
+            {
+                pf.SetWorkingDirectory(workingDirectory);
+            }
             return this;
         }
     }

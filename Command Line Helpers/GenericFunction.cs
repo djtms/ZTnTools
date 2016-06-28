@@ -1,18 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace ZTn.Tools.CommandLine.Helpers
 {
     public class GenericFunction : IFunction
     {
-        String _executableName = String.Empty;
-        String _pathToExecutable = String.Empty;
-        String _parameters = String.Empty;
+        readonly string _executableName = string.Empty;
+        private string _workingDirectory = ".";
+        string _pathToExecutable = string.Empty;
+        string _parameters = string.Empty;
 
-        Dictionary<String, String> _aliases = new Dictionary<string, string>();
+        readonly Dictionary<string, string> _aliases = new Dictionary<string, string>();
 
         System.IO.Stream _stream = System.IO.Stream.Null;
 
@@ -20,52 +19,53 @@ namespace ZTn.Tools.CommandLine.Helpers
         TimeSpan _time = TimeSpan.Zero;
 
         /// <inheritdoc/>
-        public System.IO.Stream stream
+        public System.IO.Stream Stream
         {
             get { return _stream; }
             set { _stream = value; }
         }
 
         /// <inheritdoc/>
-        public int errorCode
+        public int ErrorCode
         {
             get { return _errorCode; }
         }
 
         /// <inheritdoc/>
-        public TimeSpan time
+        public TimeSpan Time
         {
             get { return _time; }
         }
 
         /// <inheritdoc/>
-        public GenericFunction(String executableName)
+        public GenericFunction(string executableName)
         {
-            this._executableName = executableName;
+            _executableName = executableName;
         }
 
         /// <inheritdoc/>
-        public IFunction execute()
+        public IFunction Execute()
         {
-            System.IO.StreamWriter sw = new System.IO.StreamWriter(stream);
+            System.IO.StreamWriter sw = new System.IO.StreamWriter(Stream);
             sw.AutoFlush = true;
 
-            String parameters = _parameters;
-            foreach (String aliasName in _aliases.Keys)
+            var parameters = _parameters;
+            foreach (var aliasName in _aliases.Keys)
             {
                 parameters = Regex.Replace(parameters, aliasName, _aliases[aliasName]);
             }
 
             sw.WriteLine("[Generic   ] " + _executableName + " " + parameters);
 
-            System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo();
-            psi.FileName = _pathToExecutable + _executableName;
-            psi.Arguments = parameters;
-            psi.RedirectStandardOutput = true;
-            psi.UseShellExecute = false;
-
-            System.Diagnostics.Process p = new System.Diagnostics.Process();
-            p.StartInfo = psi;
+            System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = _pathToExecutable + _executableName,
+                Arguments = parameters,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                WorkingDirectory = _workingDirectory
+            };
+            System.Diagnostics.Process p = new System.Diagnostics.Process { StartInfo = psi };
 
             p.Start();
             sw.WriteLine(p.StandardOutput.ReadToEnd());
@@ -74,36 +74,43 @@ namespace ZTn.Tools.CommandLine.Helpers
             _time = p.TotalProcessorTime;
             _errorCode = p.ExitCode;
 
-            sw.WriteLine("[Generic   ] " + _executableName + " ended with ErrorCode: " + errorCode + " after " + time);
+            sw.WriteLine("[Generic   ] " + _executableName + " ended with ErrorCode: " + ErrorCode + " after " + Time);
 
             return this;
         }
 
         /// <inheritdoc/>
-        public IFunction setPathToExecutable(String path)
+        public IFunction SetPathToExecutable(string path)
         {
-            this._pathToExecutable = path;
+            _pathToExecutable = path;
             return this;
         }
 
         /// <inheritdoc/>
-        public IFunction setParameters(String parameters)
+        public IFunction SetParameters(string parameters)
         {
-            this._parameters = parameters;
+            _parameters = parameters;
             return this;
         }
 
         /// <inheritdoc/>
-        public IFunction setAlias(String alias, String value)
+        public IFunction SetAlias(string alias, string value)
         {
             _aliases.Add(alias, value);
             return this;
         }
 
         /// <inheritdoc/>
-        public IFunction setStream(System.IO.Stream outputStream)
+        public IFunction SetWorkingDirectory(string workingDirectory)
         {
-            stream = outputStream;
+            _workingDirectory = workingDirectory;
+            return this;
+        }
+
+        /// <inheritdoc/>
+        public IFunction SetStream(System.IO.Stream outputStream)
+        {
+            Stream = outputStream;
             return this;
         }
     }

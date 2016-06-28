@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-
 using ZTn.Tools.CommandLine.Helpers;
 
 namespace ZTn.Tools.CommandLine.ConsoleDemo
@@ -14,13 +10,15 @@ namespace ZTn.Tools.CommandLine.ConsoleDemo
             IFunction executable = new GenericFunction("cmd.exe");
             executable
                 // Set parameters
-                .setParameters("/C dir %WORKINGDIR")
+                .SetParameters("/C dir %WORKINGDIR")
                 // Set value for each alias to be used with next execute()
-                .setAlias("%WORKINGDIR", @".\")
+                .SetAlias("%WORKINGDIR", @".\")
                 // Set output stream to get live informations on execution (console)
-                .setStream(Console.OpenStandardOutput())
+                .SetStream(Console.OpenStandardOutput())
+                // Set working directory
+                .SetWorkingDirectory(@"..\")
                 // Execute the chain
-                .execute();
+                .Execute();
         }
     }
 }
