@@ -6,36 +6,21 @@ namespace ZTn.Tools.CommandLine.Helpers
 {
     public class GenericFunction : IFunction
     {
-        readonly string _executableName = string.Empty;
+        private readonly string _executableName;
         private string _workingDirectory = ".";
-        string _pathToExecutable = string.Empty;
-        string _parameters = string.Empty;
+        private string _pathToExecutable = string.Empty;
+        private string _parameters = string.Empty;
 
-        readonly Dictionary<string, string> _aliases = new Dictionary<string, string>();
-
-        System.IO.Stream _stream = System.IO.Stream.Null;
-
-        int _errorCode = 0;
-        TimeSpan _time = TimeSpan.Zero;
+        private readonly Dictionary<string, string> _aliases = new Dictionary<string, string>();
 
         /// <inheritdoc/>
-        public System.IO.Stream Stream
-        {
-            get { return _stream; }
-            set { _stream = value; }
-        }
+        public System.IO.Stream Stream { get; set; } = System.IO.Stream.Null;
 
         /// <inheritdoc/>
-        public int ErrorCode
-        {
-            get { return _errorCode; }
-        }
+        public int ErrorCode { get; private set; }
 
         /// <inheritdoc/>
-        public TimeSpan Time
-        {
-            get { return _time; }
-        }
+        public TimeSpan Time { get; private set; } = TimeSpan.Zero;
 
         /// <inheritdoc/>
         public GenericFunction(string executableName)
@@ -46,8 +31,7 @@ namespace ZTn.Tools.CommandLine.Helpers
         /// <inheritdoc/>
         public IFunction Execute()
         {
-            System.IO.StreamWriter sw = new System.IO.StreamWriter(Stream);
-            sw.AutoFlush = true;
+            var sw = new System.IO.StreamWriter(Stream) { AutoFlush = true };
 
             var parameters = _parameters;
             foreach (var aliasName in _aliases.Keys)
@@ -57,7 +41,7 @@ namespace ZTn.Tools.CommandLine.Helpers
 
             sw.WriteLine("[Generic   ] " + _executableName + " " + parameters);
 
-            System.Diagnostics.ProcessStartInfo psi = new System.Diagnostics.ProcessStartInfo
+            var psi = new System.Diagnostics.ProcessStartInfo
             {
                 FileName = _pathToExecutable + _executableName,
                 Arguments = parameters,
@@ -65,14 +49,14 @@ namespace ZTn.Tools.CommandLine.Helpers
                 UseShellExecute = false,
                 WorkingDirectory = _workingDirectory
             };
-            System.Diagnostics.Process p = new System.Diagnostics.Process { StartInfo = psi };
+            var p = new System.Diagnostics.Process { StartInfo = psi };
 
             p.Start();
             sw.WriteLine(p.StandardOutput.ReadToEnd());
             p.WaitForExit();
 
-            _time = p.TotalProcessorTime;
-            _errorCode = p.ExitCode;
+            Time = p.TotalProcessorTime;
+            ErrorCode = p.ExitCode;
 
             sw.WriteLine("[Generic   ] " + _executableName + " ended with ErrorCode: " + ErrorCode + " after " + Time);
 
