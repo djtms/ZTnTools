@@ -17,6 +17,7 @@ namespace ZTn.Tools.Stream.Helpers
     ///	      {
     ///	         rs.ReadLine().Dump();
     ///       }
+    ///       rws.FinalizeWritings();
     ///	   });
     ///	   Task.Run(() =>
     ///	   {
@@ -32,13 +33,15 @@ namespace ZTn.Tools.Stream.Helpers
     /// </example>
     public class AsyncReadWriteStream : System.IO.Stream
     {
-        private readonly MemoryStream _innerStream = new MemoryStream();
+        private MemoryStream _innerStream = new MemoryStream();
         private readonly ManualResetEventSlim _dataAvailable = new ManualResetEventSlim(false);
         private readonly object _synchro = new Object();
 
         private long _readPosition;
         private long _writePosition;
-        private bool _isClosed;
+        private bool _isWritingsFinalized;
+
+        #region >> Stream
 
         /// <inheritdoc />
         public override bool CanRead => true;
@@ -52,8 +55,9 @@ namespace ZTn.Tools.Stream.Helpers
         /// <inheritdoc />
         public override void Close()
         {
-            _isClosed = true;
-            _dataAvailable.Set();
+            FinalizeWritings();
+
+            base.Close();
         }
 
         /// <inheritdoc />
@@ -91,7 +95,7 @@ namespace ZTn.Tools.Stream.Helpers
 
             lock (_synchro)
             {
-                if (_isClosed && _readPosition == _writePosition)
+                if (_isWritingsFinalized && _readPosition == _writePosition)
                 {
                     _innerStream.Close();
                     return 0;
@@ -101,7 +105,7 @@ namespace ZTn.Tools.Stream.Helpers
                 var read = _innerStream.Read(buffer, offset, count);
                 _readPosition = _innerStream.Position;
 
-                if (_readPosition == _writePosition)
+                if (!_isWritingsFinalized && _readPosition == _writePosition)
                 {
                     _dataAvailable.Reset();
                 }
@@ -127,9 +131,52 @@ namespace ZTn.Tools.Stream.Helpers
         {
             lock (_synchro)
             {
+                if (_isWritingsFinalized)
+                {
+                    throw new EndOfStreamException("No Write can be done once FinalizeWritings has been called.");
+                }
+
                 _innerStream.Position = _writePosition;
                 _innerStream.Write(buffer, offset, count);
                 _writePosition = _innerStream.Position;
+                _dataAvailable.Set();
+            }
+        }
+
+        #endregion
+
+        #region >> IDisposable
+
+        /// <inheritdoc />
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                if (disposing)
+                {
+                    _innerStream?.Close();
+                }
+            }
+            finally
+            {
+                if (_innerStream != null)
+                {
+                    _innerStream = null;
+                    base.Dispose(disposing);
+                }
+            }
+        }
+
+        #endregion
+
+        /// <summary>
+        /// Finalizes the writings: no call to <see cref="Write"/> can be done now.
+        /// </summary>
+        public void FinalizeWritings()
+        {
+            lock (_synchro)
+            {
+                _isWritingsFinalized = true;
                 _dataAvailable.Set();
             }
         }
