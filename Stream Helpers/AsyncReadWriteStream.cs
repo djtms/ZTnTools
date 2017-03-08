@@ -53,14 +53,6 @@ namespace ZTn.Tools.Stream.Helpers
         public override bool CanWrite => true;
 
         /// <inheritdoc />
-        public override void Close()
-        {
-            FinalizeWritings();
-
-            base.Close();
-        }
-
-        /// <inheritdoc />
         public override void Flush()
         {
             lock (_synchro)
@@ -97,7 +89,7 @@ namespace ZTn.Tools.Stream.Helpers
             {
                 if (_isWritingsFinalized && _readPosition == _writePosition)
                 {
-                    _innerStream.Close();
+                    _innerStream.Dispose();
                     return 0;
                 }
 
@@ -154,7 +146,7 @@ namespace ZTn.Tools.Stream.Helpers
             {
                 if (disposing)
                 {
-                    _innerStream?.Close();
+                    _innerStream?.Dispose();
                 }
             }
             finally
